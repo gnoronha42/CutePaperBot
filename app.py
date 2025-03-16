@@ -89,7 +89,7 @@ if login_required:
     
     # Security code field
     security_code = driver.find_element(By.NAME, "pincode")
-    security_code.send_keys("460684")
+    security_code.send_keys("353900")
     security_code.send_keys(Keys.RETURN)
     time.sleep(5)
     
@@ -128,48 +128,66 @@ def click_stock_tab(driver):
 # Function to generate description using Ollama
 def generate_description_with_ollama(product_name):
     try:
-        # Cute stationery and flower related emojis
+        # Emojis relacionados a papelaria fofa e flores
         emojis = ["🌸", "🌷", "🌹", "🌺", "🌻", "🌼", "🍃", "✨", "📝", "📚", "🖌️", "🎨", "📒", "✏️", "🖋️", "📏", "📐", "🖇️", "📎", "🌈"]
         
-        # Prompt for AI model
+        # Prompt mais específico para o modelo de IA
         prompt = f"""
-        Crie uma descrição curta e atraente para um produto de papelaria fofa chamado "{product_name}".
-        A descrição deve:
-        - Ter no máximo 3 parágrafos curtos
-        - Destacar a qualidade e o charme do produto
-        - Mencionar que é ideal para presentes ou uso pessoal
-        - Incluir 2-3 emojis relacionados a flores ou papelaria
-        - Ser escrita em português do Brasil
-        - Ter um tom alegre e acolhedor
+        Crie uma descrição específica e detalhada em português do Brasil para o produto: "{product_name}"
+
+        Regras obrigatórias:
+        1. A descrição DEVE ser específica para este produto, mencionando seu nome e características únicas
+        2. NUNCA use descrições genéricas
+        3. Foque nas características específicas deste tipo de produto
+
+        Por exemplo:
+        - Se for um caderno: fale sobre número de folhas, tipo de papel, pauta, capa, encadernação
+        - Se for uma caneta: destaque tipo de ponta, cor da tinta, espessura do traço
+        - Se for um adesivo: mencione o tema, tamanho, se é à prova d'água
+        - Se for um planner: descreva as seções, formato de organização, período
+        - Se for um marca-texto: fale sobre a cor, ponta, características especiais
+        - Se for um washi tape: destaque o padrão, largura, comprimento
         
-        Retorne apenas a descrição formatada em HTML, sem comentários adicionais.
+        Estrutura obrigatória:
+        Parágrafo 1: Apresente o produto específico e sua principal característica
+        Parágrafo 2: Detalhe técnico do produto (medidas, materiais, cores, etc)
+        Parágrafo 3: Sugestões de uso específicas para este produto
+
+        Exemplo para um marca-texto pastel:
+        <p>✨ Marca-texto Pastel Verde Menta - Com ponta dupla chanfrada para traços precisos de 1mm a 4mm!</p>
+        <p>🌸 Tinta suave em tom verde menta, perfeita para destacar seus textos sem agredir o papel. Ponta dupla face que permite diferentes espessuras de marcação.</p>
+        <p>📝 Ideal para suas anotações de estudo, bullet journal, ou para destacar trechos importantes em seus livros de forma delicada e elegante.</p>
+
+        IMPORTANTE: Adapte a descrição mantendo sempre o foco nas características específicas do produto {product_name}.
         """
         
-        # Call to Ollama API (assuming it's running locally)
+        # Chamada para a API do Ollama
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
-                "model": "mistral",  # or another model available in your Ollama
+                "model": "mistral",
                 "prompt": prompt,
                 "stream": False
             }
         )
         
-        # Check if call was successful
         if response.status_code == 200:
             result = response.json()
             description = result.get("response", "")
             
-            # Clean description from possible extra markups
+            # Limpar a descrição
             description = description.replace("```html", "").replace("```", "").strip()
             
-            # If description doesn't have emojis, add some randomly
+            # Se a descrição não tiver emojis, adicionar alguns aleatoriamente
             if not any(emoji in description for emoji in emojis):
-                # Select 3 random emojis
                 selected_emojis = random.sample(emojis, 3)
-                description = f"{selected_emojis[0]} {description} {selected_emojis[1]}\n\n{selected_emojis[2]} Flor de Maria Papelaria - Enchanting your day!"
+                description = f"""
+                <p>{selected_emojis[0]} {product_name} - Um produto especial para você!</p>
+                <p>{selected_emojis[1]} Feito com todo carinho e qualidade que você merece. Perfeito para tornar seus momentos ainda mais especiais.</p>
+                <p>{selected_emojis[2]} Produto exclusivo da Flor de Maria Papelaria - Encantando seu dia!</p>
+                """
             
-            # Ensure description is in HTML format
+            # Garantir que a descrição esteja em formato HTML
             if "<p>" not in description:
                 paragraphs = description.split("\n\n")
                 html_description = ""
@@ -178,20 +196,20 @@ def generate_description_with_ollama(product_name):
                         html_description += f"<p>{paragraph.strip()}</p>\n"
                 description = html_description
             
-            print("Description generated successfully using Ollama!")
+            print("Descrição gerada com sucesso usando Ollama!")
             return description
         else:
-            print(f"Error in Ollama API call: {response.status_code}")
+            print(f"Erro na chamada à API do Ollama: {response.status_code}")
             return None
             
     except Exception as e:
-        print(f"Error generating description with Ollama: {e}")
-        # Fallback to generic description
+        print(f"Erro ao gerar descrição com Ollama: {e}")
+        # Descrição de fallback em português
         random_emojis = random.sample(emojis, 3)
         return f"""
-        <p><strong>{product_name}</strong> {random_emojis[0]} - A charm for your collection!</p>
-        <p>Exclusive product from Flor de Maria Papelaria, made with high-quality materials and impeccable finishing. {random_emojis[1]}</p>
-        <p>Perfect for gifting someone special or making your daily life cuter and more organized! {random_emojis[2]}</p>
+        <p>{random_emojis[0]} {product_name} - Um produto especial da nossa coleção!</p>
+        <p>{random_emojis[1]} Criado com materiais selecionados e acabamento impecável, este item vai encantar você.</p>
+        <p>{random_emojis[2]} Ideal para presentear alguém especial ou para deixar seu dia a dia mais organizado e cheio de estilo!</p>
         """
 
 # Process all products from CSV
